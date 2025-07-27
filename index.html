@@ -1,0 +1,42 @@
+<!DOCTYPE html>      
+
+<html lang="es">      
+<head>      
+    <meta charset="UTF-8">      
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">      
+    <title>Tres en Raya Online</title>      
+    <link rel="stylesheet" href="style.css">      
+</head>      
+<body>      
+    <h1>Tres en Raya Online</h1>      
+
+<div id="menu">      
+    <button id="random-match-btn">Jugar Partida Rápida</button>      
+    <hr>            
+    <button id="create-room-btn">Crear Sala</button>      
+    <div class="join-room">      
+        <input type="text" id="room-id-input" placeholder="Ingresa el ID de la sala">      
+        <button id="join-room-btn">Unirse</button>      
+    </div>      
+</div>      
+      
+<div id="game-container">      
+    <div id="status">Conectando...</div>      
+    <div id="game-board" class="disabled">      
+        <div class="cell" data-index="0"></div>      
+        <div class="cell" data-index="1"></div>      
+        <div class="cell" data-index="2"></div>      
+        <div class="cell" data-index="3"></div>      
+        <div class="cell" data-index="4"></div>      
+        <div class="cell" data-index="5"></div>      
+        <div class="cell" data-index="6"></div>      
+        <div class="cell" data-index="7"></div>      
+        <div class="cell" data-index="8"></div>      
+    </div>      
+    <button id="play-again" style="display: none;">Jugar de Nuevo</button>      
+</div>      
+  
+<script src="app.js"></script>
+
+</body>      
+</html>
