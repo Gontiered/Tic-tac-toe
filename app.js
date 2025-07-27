@@ -5,6 +5,7 @@ const statusDisplay = document.getElementById('status');
 const gameBoard = document.getElementById('game-board');
 const cells = document.querySelectorAll('.cell');
 const playAgainButton = document.getElementById('play-again');
+const backToMenuButton = document.getElementById('back-to-menu-btn');
 
 // Botones y campos del menú
 const randomMatchBtn = document.getElementById('random-match-btn');
@@ -23,10 +24,12 @@ randomMatchBtn.addEventListener('click', () => {
     socket.send(JSON.stringify({ type: 'random' }));
     statusDisplay.textContent = 'Buscando oponente...';
     showGameContainer();
+    backToMenuButton.style.display = 'block'; // Mostrar botón en partidas rápidas
 });
 
 createRoomBtn.addEventListener('click', () => {
     socket.send(JSON.stringify({ type: 'create' }));
+    // El botón se muestra cuando llega room_created
 });
 
 joinRoomBtn.addEventListener('click', () => {
@@ -34,6 +37,14 @@ joinRoomBtn.addEventListener('click', () => {
     if (roomId) {
         socket.send(JSON.stringify({ type: 'join', roomId: roomId }));
     }
+});
+
+backToMenuButton.addEventListener('click', () => {
+    menu.style.display = 'flex';
+    gameContainer.style.display = 'none';
+    statusDisplay.textContent = '';
+    backToMenuButton.style.display = 'none';
+    window.location.reload();
 });
 
 function showGameContainer() {
@@ -47,9 +58,10 @@ socket.onmessage = (event) => {
 
     switch (data.type) {
         case 'room_created':
-            // Corregido: Usar innerHTML para interpretar las etiquetas HTML
+            // Usar innerHTML para interpretar las etiquetas HTML
             statusDisplay.innerHTML = `Sala creada. Comparte este ID: <br><strong>${data.roomId}</strong>`;
             showGameContainer();
+            backToMenuButton.style.display = 'block'; // Mostrar el botón en la sala privada esperando rival
             break;
         case 'start':
             mySymbol = data.symbol;
@@ -58,6 +70,7 @@ socket.onmessage = (event) => {
             gameBoard.classList.remove('disabled');
             showGameContainer();
             resetBoard();
+            backToMenuButton.style.display = 'none'; // Ocultar botón al comenzar partida
             break;
         case 'update':
             updateBoard(data.board);
@@ -71,9 +84,11 @@ socket.onmessage = (event) => {
             statusDisplay.textContent = data.message;
             gameBoard.classList.add('disabled');
             playAgainButton.style.display = 'block';
+            backToMenuButton.style.display = 'none';
             break;
         case 'error':
             alert(data.message);
+            backToMenuButton.style.display = 'none';
             break;
     }
 };
@@ -81,6 +96,7 @@ socket.onmessage = (event) => {
 socket.onclose = () => {
     statusDisplay.textContent = 'Desconectado del servidor.';
     gameBoard.classList.add('disabled');
+    backToMenuButton.style.display = 'none';
 };
 
 // ---- Lógica del Juego ----
