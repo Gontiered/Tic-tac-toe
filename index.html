@@ -5,18 +5,20 @@
     <meta charset="UTF-8">      
     <meta name="viewport" content="width=device-width, initial-scale=1.0">      
     <title>Tres en Raya Online</title>      
-    <link rel="stylesheet" href="style.css">      
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome para iconos modernos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>      
 <body>      
-    <h1>Tres en Raya Online</h1>      
+    <h1><i class="fas fa-gamepad"></i> Tres en Raya Online</h1>      
 
 <div id="menu">      
-    <button id="random-match-btn">Jugar Partida Rápida</button>      
+    <button id="random-match-btn"><i class="fas fa-bolt"></i> Partida Rápida</button>      
     <hr>            
-    <button id="create-room-btn">Crear Sala</button>      
+    <button id="create-room-btn"><i class="fas fa-door-open"></i> Crear Sala</button>      
     <div class="join-room">      
-        <input type="text" id="room-id-input" placeholder="Ingresa el ID de la sala">      
-        <button id="join-room-btn">Unirse</button>      
+        <input type="text" id="room-id-input" placeholder="ID de la sala">      
+        <button id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Unirse</button>      
     </div>      
 </div>      
       
@@ -32,9 +34,10 @@
         <div class="cell" data-index="6"></div>      
         <div class="cell" data-index="7"></div>      
         <div class="cell" data-index="8"></div>      
-    </div>      
-    <button id="play-again" style="display: none;">Jugar de Nuevo</button>      
-</div>      
+    </div>
+    <button id="back-to-menu-btn" style="display:none; margin-top:20px;"><i class="fas fa-arrow-left"></i> Volver al Menú</button>
+    <button id="play-again" style="display: none;"><i class="fas fa-redo"></i> Jugar de Nuevo</button>      
+</div>
   
 <script src="app.js"></script>
 
