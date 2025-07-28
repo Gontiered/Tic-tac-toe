@@ -1,10 +1,72 @@
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 8080 });
+const bcrypt = require('bcrypt');
+const cors = require('cors');
+
+// === CONFIGURACIÓN ===
+const USERS_FILE = path.join(__dirname, 'users.json');
+const PORT = 8080;
+
+// === FUNCIONES DE USUARIOS ===
+function loadUsers() {
+    if (!fs.existsSync(USERS_FILE)) return [];
+    try {
+        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+    } catch {
+        return [];
+    }
+}
+function saveUsers(users) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+function findUser(username) {
+    const users = loadUsers();
+    return users.find(u => u.username === username);
+}
+
+// === EXPRESS HTTP API ===
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Registro
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password || username.length < 3 || password.length > 25 || password.length < 6) {
+        return res.status(400).json({ error: 'Usuario o contraseña inválidos' });
+    }
+    const users = loadUsers();
+    if (users.find(u => u.username === username)) {
+        return res.status(400).json({ error: 'El usuario ya existe' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    users.push({ username, passwordHash: hash });
+    saveUsers(users);
+    res.json({ success: true });
+});
+
+// Login
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = findUser(username);
+    if (!user) return res.status(400).json({ error: 'Usuario o contraseña incorrectos' });
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) return res.status(400).json({ error: 'Usuario o contraseña incorrectos' });
+    // No JWT para simplificar, solo confirmación
+    res.json({ success: true, username });
+});
+
+// === HTTP + WEBSOCKET ===
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 let randomQueue = [];
 let gameRooms = {};
 
-console.log('Servidor de Tic-Tac-Toe iniciado en el puerto 8080...');
+console.log(`Servidor de Tic-Tac-Toe y API iniciado en el puerto ${PORT}...`);
 
 wss.on('connection', (ws) => {
     ws.nickname = null;
@@ -137,7 +199,6 @@ function startGame(player1, player2) {
     player1.symbol = 'X';
     player2.symbol = 'O';
 
-    // Nicknames
     const nick1 = player1.nickname || 'Jugador X';
     const nick2 = player2.nickname || 'Jugador O';
 
@@ -147,7 +208,6 @@ function startGame(player1, player2) {
         gameRooms[roomId].nicknames = [nick1, nick2];
     }
 
-    // Enviar ambos nicknames a ambos jugadores
     const playersObj = { X: nick1, O: nick2 };
     player1.send(JSON.stringify({ type: 'start', symbol: 'X', players: playersObj, message: `La partida ha comenzado. Es tu turno, ${nick1}` }));
     player2.send(JSON.stringify({ type: 'start', symbol: 'O', players: playersObj, message: `La partida ha comenzado. Esperando a ${nick1}` }));
@@ -175,3 +235,8 @@ function checkWinnerLine(board) {
     }
     return null;
 }
+
+// === INICIAR SERVIDOR ===
+server.listen(PORT, () => {
+    console.log(`Servidor escuchando en puerto ${PORT} (HTTP y WebSocket)`);
+});
