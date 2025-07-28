@@ -7,19 +7,22 @@ let gameRooms = {};
 console.log('Servidor de Tic-Tac-Toe iniciado en el puerto 8080...');
 
 wss.on('connection', (ws) => {
-    console.log('Cliente conectado.');
+    ws.nickname = null;
 
     ws.on('message', (message) => {
         const data = JSON.parse(message);
 
         switch (data.type) {
             case 'random':
+                ws.nickname = data.nickname;
                 handleRandomMatch(ws);
                 break;
             case 'create':
+                ws.nickname = data.nickname;
                 handleCreateRoom(ws);
                 break;
             case 'join':
+                ws.nickname = data.nickname;
                 handleJoinRoom(ws, data.roomId);
                 break;
             case 'move':
@@ -29,7 +32,6 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        console.log('Cliente desconectado.');
         randomQueue = randomQueue.filter(player => player !== ws);
         handleDisconnection(ws);
     });
@@ -48,18 +50,19 @@ function handleCreateRoom(ws) {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     gameRooms[roomId] = {
         players: [ws],
+        nicknames: [ws.nickname],
         board: Array(9).fill(null),
         turn: 0
     };
     ws.roomId = roomId;
     ws.send(JSON.stringify({ type: 'room_created', roomId: roomId }));
-    console.log(`Sala creada: ${roomId}`);
 }
 
 function handleJoinRoom(ws, roomId) {
     const room = gameRooms[roomId];
     if (room && room.players.length === 1) {
         room.players.push(ws);
+        room.nicknames.push(ws.nickname);
         ws.roomId = roomId;
         startGame(room.players[0], room.players[1]);
     } else {
@@ -83,10 +86,9 @@ function handleMove(ws, index) {
         broadcast(game, { type: 'update', board: game.board });
 
         if (winnerLine) {
-            // Enviar mensaje 'end' con las posiciones ganadoras para que cliente haga animación
             broadcast(game, {
                 type: 'end',
-                message: `¡El jugador ${ws.symbol} ha ganado!`,
+                message: `¡${game.nicknames[playerIndex]} (${ws.symbol}) ha ganado!`,
                 board: game.board,
                 winningCells: winnerLine
             });
@@ -101,10 +103,12 @@ function handleMove(ws, index) {
             delete gameRooms[roomId];
         } else {
             game.turn = 1 - game.turn;
-            const nextPlayerSymbol = game.players[game.turn].symbol;
             game.players.forEach((player, idx) => {
-                const turnMessage = (idx === game.turn) ? `Es tu turno (${nextPlayerSymbol})` : `Turno del oponente (${nextPlayerSymbol})`;
-                player.send(JSON.stringify({ type: 'turn', message: turnMessage }));
+                const isPlayerTurn = idx === game.turn;
+                const message = isPlayerTurn
+                    ? `Es tu turno, ${game.nicknames[idx]}`
+                    : `Turno de ${game.nicknames[game.turn]}`;
+                player.send(JSON.stringify({ type: 'turn', message, isMyTurn: isPlayerTurn }));
             });
         }
     }
@@ -116,11 +120,11 @@ function handleDisconnection(ws) {
         const game = gameRooms[roomId];
         if (game.players.length === 1 && game.players[0] === ws) {
             delete gameRooms[roomId];
-            console.log(`Sala ${roomId} eliminada por desconexión del creador.`);
         } else {
-            const opponent = game.players.find(p => p !== ws);
+            const opponentIdx = game.players.findIndex(p => p !== ws);
+            const opponent = game.players[opponentIdx];
             if (opponent && opponent.readyState === WebSocket.OPEN) {
-                opponent.send(JSON.stringify({ type: 'end', message: 'El oponente se ha desconectado. ¡Ganaste!' }));
+                opponent.send(JSON.stringify({ type: 'end', message: `El oponente se ha desconectado. ¡Ganaste!` }));
             }
             delete gameRooms[roomId];
         }
@@ -133,13 +137,20 @@ function startGame(player1, player2) {
     player1.symbol = 'X';
     player2.symbol = 'O';
 
+    // Nicknames
+    const nick1 = player1.nickname || 'Jugador X';
+    const nick2 = player2.nickname || 'Jugador O';
+
     if (!gameRooms[roomId]) {
-        gameRooms[roomId] = { players: [player1, player2], board: Array(9).fill(null), turn: 0 };
+        gameRooms[roomId] = { players: [player1, player2], nicknames: [nick1, nick2], board: Array(9).fill(null), turn: 0 };
+    } else {
+        gameRooms[roomId].nicknames = [nick1, nick2];
     }
 
-    console.log(`Partida iniciada en sala: ${roomId}`);
-    player1.send(JSON.stringify({ type: 'start', symbol: 'X', message: 'La partida ha comenzado. ¡Es tu turno!' }));
-    player2.send(JSON.stringify({ type: 'start', symbol: 'O', message: 'La partida ha comenzado. Esperando al oponente.' }));
+    // Enviar ambos nicknames a ambos jugadores
+    const playersObj = { X: nick1, O: nick2 };
+    player1.send(JSON.stringify({ type: 'start', symbol: 'X', players: playersObj, message: `La partida ha comenzado. Es tu turno, ${nick1}` }));
+    player2.send(JSON.stringify({ type: 'start', symbol: 'O', players: playersObj, message: `La partida ha comenzado. Esperando a ${nick1}` }));
 }
 
 function broadcast(game, message) {
@@ -150,7 +161,6 @@ function broadcast(game, message) {
     });
 }
 
-// Cambié checkWinner para devolver la línea ganadora en vez del símbolo
 function checkWinnerLine(board) {
     const lines = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
