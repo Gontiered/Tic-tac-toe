@@ -7,35 +7,69 @@ const cells = document.querySelectorAll('.cell');
 const playAgainButton = document.getElementById('play-again');
 const backToMenuButton = document.getElementById('back-to-menu-btn');
 
+// Barra de nombres
+const playersBar = document.getElementById('players-bar');
+const nicknameX = document.getElementById('nickname-x');
+const nicknameO = document.getElementById('nickname-o');
+
+// Nickname
+let myNickname = '';
+let mySymbol = null;
+let isMyTurn = false;
+let players = { X: '', O: '' };
+
 // Botones y campos del menú
 const randomMatchBtn = document.getElementById('random-match-btn');
 const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const roomIdInput = document.getElementById('room-id-input');
+const nicknameInput = document.getElementById('nickname-input');
 
 // Conexión WebSocket
 const socket = new WebSocket('ws://localhost:8080');
 
-let mySymbol = null;
-let isMyTurn = false;
+function getNickname() {
+    return nicknameInput.value.trim().substring(0, 15);
+}
 
 // ---- Lógica del Menú ----
 randomMatchBtn.addEventListener('click', () => {
-    socket.send(JSON.stringify({ type: 'random' }));
+    myNickname = getNickname();
+    if (!myNickname) {
+        nicknameInput.focus();
+        nicknameInput.classList.add('input-error');
+        setTimeout(() => nicknameInput.classList.remove('input-error'), 800);
+        return;
+    }
+    socket.send(JSON.stringify({ type: 'random', nickname: myNickname }));
     statusDisplay.textContent = 'Buscando oponente...';
     showGameContainer();
-    backToMenuButton.style.display = 'block'; // Mostrar botón en partidas rápidas
+    backToMenuButton.style.display = 'block';
+    playersBar.style.display = 'none';
 });
 
 createRoomBtn.addEventListener('click', () => {
-    socket.send(JSON.stringify({ type: 'create' }));
-    // El botón se muestra cuando llega room_created
+    myNickname = getNickname();
+    if (!myNickname) {
+        nicknameInput.focus();
+        nicknameInput.classList.add('input-error');
+        setTimeout(() => nicknameInput.classList.remove('input-error'), 800);
+        return;
+    }
+    socket.send(JSON.stringify({ type: 'create', nickname: myNickname }));
 });
 
 joinRoomBtn.addEventListener('click', () => {
+    myNickname = getNickname();
+    if (!myNickname) {
+        nicknameInput.focus();
+        nicknameInput.classList.add('input-error');
+        setTimeout(() => nicknameInput.classList.remove('input-error'), 800);
+        return;
+    }
     const roomId = roomIdInput.value.trim().toUpperCase();
     if (roomId) {
-        socket.send(JSON.stringify({ type: 'join', roomId: roomId }));
+        socket.send(JSON.stringify({ type: 'join', roomId: roomId, nickname: myNickname }));
     }
 });
 
@@ -44,6 +78,7 @@ backToMenuButton.addEventListener('click', () => {
     gameContainer.style.display = 'none';
     statusDisplay.textContent = '';
     backToMenuButton.style.display = 'none';
+    playersBar.style.display = 'none';
     window.location.reload();
 });
 
@@ -58,25 +93,28 @@ socket.onmessage = (event) => {
 
     switch (data.type) {
         case 'room_created':
-            // Usar innerHTML para interpretar las etiquetas HTML
             statusDisplay.innerHTML = `Sala creada. Comparte este ID: <br><strong>${data.roomId}</strong>`;
             showGameContainer();
-            backToMenuButton.style.display = 'block'; // Mostrar el botón en la sala privada esperando rival
+            backToMenuButton.style.display = 'block';
+            playersBar.style.display = 'none';
             break;
         case 'start':
             mySymbol = data.symbol;
+            players = data.players;
+            updatePlayersBar();
             isMyTurn = (mySymbol === 'X');
             statusDisplay.textContent = data.message;
             gameBoard.classList.remove('disabled');
             showGameContainer();
             resetBoard();
-            backToMenuButton.style.display = 'none'; // Ocultar botón al comenzar partida
+            backToMenuButton.style.display = 'none';
+            playersBar.style.display = 'flex';
             break;
         case 'update':
             updateBoard(data.board);
             break;
         case 'turn':
-            isMyTurn = data.message.includes('tu turno');
+            isMyTurn = data.isMyTurn;
             statusDisplay.textContent = data.message;
             gameBoard.classList.toggle('disabled', !isMyTurn);
             break;
@@ -97,6 +135,7 @@ socket.onclose = () => {
     statusDisplay.textContent = 'Desconectado del servidor.';
     gameBoard.classList.add('disabled');
     backToMenuButton.style.display = 'none';
+    playersBar.style.display = 'none';
 };
 
 // ---- Lógica del Juego ----
@@ -130,4 +169,16 @@ function resetBoard() {
         cell.classList.remove('x', 'o');
     });
     playAgainButton.style.display = 'none';
+}
+
+function updatePlayersBar() {
+    if (!players || !players.X || !players.O) {
+        playersBar.style.display = 'none';
+        nicknameX.textContent = '';
+        nicknameO.textContent = '';
+        return;
+    }
+    nicknameX.textContent = `${players.X} (X)`;
+    nicknameO.textContent = `${players.O} (O)`;
+    playersBar.style.display = 'flex';
 }
