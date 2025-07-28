@@ -1,51 +1,72 @@
-<!DOCTYPE html>      
-
-<html lang="es">      
-<head>      
-    <meta charset="UTF-8">      
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">      
-    <title>Tres en Raya Online</title>      
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tres en Raya Online</title>
     <link rel="stylesheet" href="style.css">
     <!-- Font Awesome para iconos modernos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>      
-<body>      
-    <h1><i class="fas fa-gamepad"></i> Tres en Raya Online</h1>      
+</head>
+<body>
+    <h1><i class="fas fa-gamepad"></i> Tres en Raya Online</h1>
 
-<div id="menu">      
-    <input type="text" id="nickname-input" placeholder="Tu nickname" maxlength="15" autocomplete="off" required style="margin-bottom:10px; width: 100%;">
-    <button id="random-match-btn"><i class="fas fa-bolt"></i> Partida Rápida</button>      
-    <hr>            
-    <button id="create-room-btn"><i class="fas fa-door-open"></i> Crear Sala</button>      
-    <div class="join-room">      
-        <input type="text" id="room-id-input" placeholder="ID de la sala">      
-        <button id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Unirse</button>      
-    </div>      
-</div>      
-      
-<div id="game-container">      
-    <div id="players-bar" style="display:none;justify-content:center;width:100%;max-width:450px;margin:0 auto 10px auto; font-weight:bold;gap:10px;font-size:1.08em;">
-        <span id="nickname-x"></span>
-        <span style="opacity:0.7;">VS</span>
-        <span id="nickname-o"></span>
+    <!-- Modal de Login -->
+    <div id="login-modal" style="display:flex; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:999;">
+      <form id="login-form" style="background:#fff; padding:30px 20px; border-radius:8px; box-shadow:0 4px 24px #0002; display:flex; flex-direction:column; gap:12px; min-width:260px;">
+        <h2 style="text-align:center; margin:0 0 10px;">Iniciar sesión</h2>
+        <input type="text" id="login-username" placeholder="Usuario" autocomplete="username" minlength="3" maxlength="25" required>
+        <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password" minlength="6" required>
+        <button type="submit">Entrar</button>
+        <button type="button" id="show-register-from-login" style="background:#2ecc71;">¿No tienes cuenta? Regístrate</button>
+        <div id="login-message" style="color:#e74c3c; min-height:1.2em; text-align:center;"></div>
+      </form>
     </div>
-    <div id="status">Conectando...</div>      
-    <div id="game-board" class="disabled">      
-        <div class="cell" data-index="0"></div>      
-        <div class="cell" data-index="1"></div>      
-        <div class="cell" data-index="2"></div>      
-        <div class="cell" data-index="3"></div>      
-        <div class="cell" data-index="4"></div>      
-        <div class="cell" data-index="5"></div>      
-        <div class="cell" data-index="6"></div>      
-        <div class="cell" data-index="7"></div>      
-        <div class="cell" data-index="8"></div>      
-    </div>
-    <button id="back-to-menu-btn" style="display:none; margin-top:20px;"><i class="fas fa-arrow-left"></i> Volver al Menú</button>
-    <button id="play-again" style="display: none;"><i class="fas fa-redo"></i> Jugar de Nuevo</button>      
-</div>
-  
-<script src="app.js"></script>
 
-</body>      
+    <!-- Modal de Registro -->
+    <div id="register-modal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:999;">
+      <form id="register-form" style="background:#fff; padding:30px 20px; border-radius:8px; box-shadow:0 4px 24px #0002; display:flex; flex-direction:column; gap:12px; min-width:260px;">
+        <h2 style="text-align:center; margin:0 0 10px;">Registro</h2>
+        <input type="text" id="register-username" placeholder="Usuario" autocomplete="username" minlength="3" maxlength="25" required>
+        <input type="password" id="register-password" placeholder="Contraseña (min. 6)" autocomplete="new-password" minlength="6" required>
+        <button type="submit">Registrarse</button>
+        <button type="button" id="register-cancel" style="background:#e74c3c;">Cancelar</button>
+        <div id="register-message" style="color:#e74c3c; min-height:1.2em; text-align:center;"></div>
+      </form>
+    </div>
+
+    <div id="menu" style="display:none;">
+        <input type="text" id="nickname-input" placeholder="Tu nickname" maxlength="15" autocomplete="off" required style="margin-bottom:10px; width: 100%;">
+        <button id="random-match-btn"><i class="fas fa-bolt"></i> Partida Rápida</button>
+        <hr>
+        <button id="create-room-btn"><i class="fas fa-door-open"></i> Crear Sala</button>
+        <div class="join-room">
+            <input type="text" id="room-id-input" placeholder="ID de la sala">
+            <button id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Unirse</button>
+        </div>
+    </div>
+
+    <div id="game-container" style="display:none;">
+        <div id="players-bar" style="display:none;justify-content:center;width:100%;max-width:450px;margin:0 auto 10px auto; font-weight:bold;gap:10px;font-size:1.08em;">
+            <span id="nickname-x"></span>
+            <span style="opacity:0.7;">VS</span>
+            <span id="nickname-o"></span>
+        </div>
+        <div id="status">Conectando...</div>
+        <div id="game-board" class="disabled">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button id="back-to-menu-btn" style="display:none; margin-top:20px;"><i class="fas fa-arrow-left"></i> Volver al Menú</button>
+        <button id="play-again" style="display: none;"><i class="fas fa-redo"></i> Jugar de Nuevo</button>
+    </div>
+    <script src="app.js"></script>
+</body>
 </html>
