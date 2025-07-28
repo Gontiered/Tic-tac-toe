@@ -13,6 +13,7 @@
     <h1><i class="fas fa-gamepad"></i> Tres en Raya Online</h1>      
 
 <div id="menu">      
+    <input type="text" id="nickname-input" placeholder="Tu nickname" maxlength="15" autocomplete="off" required style="margin-bottom:10px; width: 100%;">
     <button id="random-match-btn"><i class="fas fa-bolt"></i> Partida Rápida</button>      
     <hr>            
     <button id="create-room-btn"><i class="fas fa-door-open"></i> Crear Sala</button>      
@@ -23,6 +24,11 @@
 </div>      
       
 <div id="game-container">      
+    <div id="players-bar" style="display:none;justify-content:center;width:100%;max-width:450px;margin:0 auto 10px auto; font-weight:bold;gap:10px;font-size:1.08em;">
+        <span id="nickname-x"></span>
+        <span style="opacity:0.7;">VS</span>
+        <span id="nickname-o"></span>
+    </div>
     <div id="status">Conectando...</div>      
     <div id="game-board" class="disabled">      
         <div class="cell" data-index="0"></div>      
