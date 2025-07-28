@@ -6,27 +6,121 @@ const gameBoard = document.getElementById('game-board');
 const cells = document.querySelectorAll('.cell');
 const playAgainButton = document.getElementById('play-again');
 const backToMenuButton = document.getElementById('back-to-menu-btn');
-
-// Barra de nombres
 const playersBar = document.getElementById('players-bar');
 const nicknameX = document.getElementById('nickname-x');
 const nicknameO = document.getElementById('nickname-o');
-
-// Nickname
-let myNickname = '';
-let mySymbol = null;
-let isMyTurn = false;
-let players = { X: '', O: '' };
-
-// Botones y campos del menú
 const randomMatchBtn = document.getElementById('random-match-btn');
 const createRoomBtn = document.getElementById('create-room-btn');
 const joinRoomBtn = document.getElementById('join-room-btn');
 const roomIdInput = document.getElementById('room-id-input');
 const nicknameInput = document.getElementById('nickname-input');
 
-// Conexión WebSocket
-const socket = new WebSocket('ws://localhost:8080');
+// Login/registro
+const loginModal = document.getElementById('login-modal');
+const loginForm = document.getElementById('login-form');
+const loginUsername = document.getElementById('login-username');
+const loginPassword = document.getElementById('login-password');
+const loginMessage = document.getElementById('login-message');
+const showRegisterFromLogin = document.getElementById('show-register-from-login');
+const registerModal = document.getElementById('register-modal');
+const registerForm = document.getElementById('register-form');
+const registerUsername = document.getElementById('register-username');
+const registerPassword = document.getElementById('register-password');
+const registerCancel = document.getElementById('register-cancel');
+const registerMessage = document.getElementById('register-message');
+
+// Estado de usuario
+let myNickname = '';
+let mySymbol = null;
+let isMyTurn = false;
+let players = { X: '', O: '' };
+
+// --------- Login y Registro ---------
+showRegisterFromLogin.addEventListener('click', () => {
+    loginModal.style.display = 'none';
+    registerModal.style.display = 'flex';
+    registerForm.reset();
+    registerMessage.textContent = '';
+    registerUsername.focus();
+});
+
+registerCancel.addEventListener('click', () => {
+    registerModal.style.display = 'none';
+    loginModal.style.display = 'flex';
+    loginForm.reset();
+    loginMessage.textContent = '';
+    loginUsername.focus();
+});
+
+registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    registerMessage.textContent = '';
+    const username = registerUsername.value.trim();
+    const password = registerPassword.value;
+    if (username.length < 3 || password.length < 6) {
+        registerMessage.textContent = 'Usuario o contraseña inválidos.';
+        return;
+    }
+    try {
+        const res = await fetch('http://localhost:8080/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            registerMessage.style.color = '#27ae60';
+            registerMessage.textContent = '¡Registro exitoso! Ahora puedes iniciar sesión.';
+            setTimeout(() => {
+                registerModal.style.display = 'none';
+                loginModal.style.display = 'flex';
+                loginForm.reset();
+                loginMessage.textContent = '';
+                loginUsername.focus();
+                registerMessage.style.color = '#e74c3c';
+            }, 1200);
+        } else {
+            registerMessage.style.color = '#e74c3c';
+            registerMessage.textContent = data.error || 'Error en el registro';
+        }
+    } catch (err) {
+        registerMessage.style.color = '#e74c3c';
+        registerMessage.textContent = 'Error de conexión con el servidor';
+    }
+});
+
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    loginMessage.textContent = '';
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+    if (username.length < 3 || password.length < 6) {
+        loginMessage.textContent = 'Usuario o contraseña inválidos.';
+        return;
+    }
+    try {
+        const res = await fetch('http://localhost:8080/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (data.token) {
+            localStorage.setItem('ttt_token', data.token);
+            localStorage.setItem('ttt_user', data.username);
+            myNickname = data.username;
+            loginModal.style.display = 'none';
+            menu.style.display = 'flex';
+            if (nicknameInput) nicknameInput.value = data.username;
+        } else {
+            loginMessage.textContent = data.error || 'Credenciales incorrectas';
+        }
+    } catch (err) {
+        loginMessage.textContent = 'Error de conexión con el servidor';
+    }
+});
+
+// ---------- FIN Login y Registro ----------
 
 function getNickname() {
     return nicknameInput.value.trim().substring(0, 15);
@@ -88,6 +182,7 @@ function showGameContainer() {
 }
 
 // ---- Lógica del WebSocket ----
+const socket = new WebSocket('ws://localhost:8080');
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
